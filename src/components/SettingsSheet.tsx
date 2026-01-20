@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getSettings, updateSettings } from '@/storage/settings'
+import { getSettings, updateSettings, setAppIcon } from '@/storage/settings'
 import { getProfile, updateProfile } from '@/storage/profile'
 import { validateApiKey } from '@/brain/claude'
 import { hapticNotification, hapticImpact, hapticSelection } from '@/lib/haptics'
@@ -11,7 +11,15 @@ interface SettingsSheetProps {
 }
 
 type AppearanceMode = 'system' | 'light' | 'dark'
-type SubPage = 'main' | 'profile' | 'apikey'
+type SubPage = 'main' | 'profile' | 'apikey' | 'appicon'
+
+const APP_ICONS = [
+  { id: 'tilde-logo.png', name: 'Default' },
+  { id: 'tilde-logo2.png', name: 'Minimal' },
+  { id: 'tilde-logo3.png', name: 'Light' },
+  { id: 'tilde-logo4.png', name: 'Gradient' },
+  { id: 'tilde-logo5.png', name: 'Dark' },
+]
 
 export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
   const [apiKey, setApiKey] = useState('')
@@ -19,6 +27,7 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
   const [name, setName] = useState('')
   const [context, setContext] = useState('')
   const [appearance, setAppearance] = useState<AppearanceMode>('system')
+  const [selectedIcon, setSelectedIcon] = useState('tilde-logo.png')
   const [validating, setValidating] = useState(false)
   const [error, setError] = useState('')
   const [showKey, setShowKey] = useState(false)
@@ -43,6 +52,7 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
     setOriginalApiKey(settings.apiKey)
     setName(profile.name)
     setContext(profile.context)
+    setSelectedIcon(settings.appIcon || 'tilde-logo.png')
   }
 
   const handleSaveProfile = async () => {
@@ -87,6 +97,17 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
     await hapticSelection()
     setAppearance(mode)
     // TODO: Implement actual theme switching
+  }
+
+  const handleSaveAppIcon = async () => {
+    await setAppIcon(selectedIcon)
+    hapticNotification('success')
+    setSubPage('main')
+  }
+
+  const handleIconSelect = async (iconId: string) => {
+    await hapticSelection()
+    setSelectedIcon(iconId)
   }
 
   const navigateTo = async (page: SubPage) => {
@@ -186,11 +207,11 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
             </button>
           )}
           <h1 className="text-lg font-semibold text-text-primary absolute left-1/2 -translate-x-1/2">
-            {subPage === 'main' ? 'Settings' : subPage === 'profile' ? 'Profile' : 'API Key'}
+            {subPage === 'main' ? 'Settings' : subPage === 'profile' ? 'Profile' : subPage === 'apikey' ? 'API Key' : 'App Icon'}
           </h1>
           {subPage !== 'main' ? (
             <button
-              onClick={subPage === 'profile' ? handleSaveProfile : handleSaveApiKey}
+              onClick={subPage === 'profile' ? handleSaveProfile : subPage === 'apikey' ? handleSaveApiKey : handleSaveAppIcon}
               disabled={validating}
               className="text-accent font-semibold font-mono text-base pressable py-2 disabled:opacity-50"
             >
@@ -262,6 +283,31 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
                       ))}
                     </div>
                   </div>
+                </div>
+              </section>
+
+              {/* App Icon */}
+              <section>
+                <h3 className="text-sm font-normal text-text-secondary/70 uppercase px-4 mb-2">
+                  App Icon
+                </h3>
+                <div className="bg-white rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => navigateTo('appicon')}
+                    className="w-full flex items-center justify-between px-4 py-4 pressable"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={`/${selectedIcon}`} 
+                        alt="Current icon" 
+                        className="w-10 h-10 rounded-xl"
+                      />
+                      <span className="text-base text-text-primary">Change App Icon</span>
+                    </div>
+                    <svg className="w-5 h-5 text-text-secondary/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </button>
                 </div>
               </section>
 
@@ -477,6 +523,55 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
                     </div>
                   </div>
                 </div>
+              </section>
+            </div>
+          )}
+
+          {/* App Icon Sub-page */}
+          {subPage === 'appicon' && (
+            <div className="px-4 pb-8 space-y-6">
+              <section>
+                <h3 className="text-sm font-normal text-text-secondary/70 uppercase px-4 mb-2">
+                  Choose Icon
+                </h3>
+                <div className="bg-white rounded-xl overflow-hidden p-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    {APP_ICONS.map((icon) => (
+                      <button
+                        key={icon.id}
+                        onClick={() => handleIconSelect(icon.id)}
+                        className={cn(
+                          'flex flex-col items-center gap-2 p-3 rounded-xl transition-all pressable',
+                          selectedIcon === icon.id
+                            ? 'bg-accent/10 ring-2 ring-accent'
+                            : 'bg-surface hover:bg-surface/80'
+                        )}
+                      >
+                        <img 
+                          src={`/${icon.id}`} 
+                          alt={icon.name} 
+                          className="w-16 h-16 rounded-2xl shadow-lg"
+                        />
+                        <span className={cn(
+                          'text-xs font-medium',
+                          selectedIcon === icon.id ? 'text-accent' : 'text-text-secondary'
+                        )}>
+                          {icon.name}
+                        </span>
+                        {selectedIcon === icon.id && (
+                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-sm text-text-secondary/50 px-4 mt-3">
+                  The app icon will be updated on your home screen.
+                </p>
               </section>
             </div>
           )}

@@ -3,7 +3,8 @@ import { App, View, f7ready } from 'framework7-react'
 import { ConversationList } from '@/features/conversations/ConversationList'
 import { ChatView } from '@/features/chat/ChatView'
 import { Onboarding } from '@/features/onboarding/Onboarding'
-import { hasApiKey } from '@/storage/settings'
+import { WelcomeScreen } from '@/components/WelcomeScreen'
+import { hasApiKey, hasSeenWelcome } from '@/storage/settings'
 
 // Framework7 Routes - Chat is main screen, history is secondary
 const routes = [
@@ -41,10 +42,18 @@ const f7params = {
 }
 
 export default function AppRoot() {
+  const [showWelcome, setShowWelcome] = useState<boolean | null>(null)
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null)
 
   useEffect(() => {
-    hasApiKey().then(has => setNeedsOnboarding(!has))
+    async function checkState() {
+      const seenWelcome = await hasSeenWelcome()
+      const hasKey = await hasApiKey()
+      
+      setShowWelcome(!seenWelcome)
+      setNeedsOnboarding(!hasKey)
+    }
+    checkState()
   }, [])
 
   useEffect(() => {
@@ -54,7 +63,7 @@ export default function AppRoot() {
   }, [])
 
   // Show loading spinner while checking
-  if (needsOnboarding === null) {
+  if (showWelcome === null || needsOnboarding === null) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-white">
         <img
@@ -66,7 +75,12 @@ export default function AppRoot() {
     )
   }
 
-  // Show onboarding for new users
+  // Show welcome screen for first-time users
+  if (showWelcome) {
+    return <WelcomeScreen onComplete={() => setShowWelcome(false)} />
+  }
+
+  // Show onboarding for users without API key
   if (needsOnboarding) {
     return <Onboarding onComplete={() => setNeedsOnboarding(false)} />
   }

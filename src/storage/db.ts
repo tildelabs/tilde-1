@@ -32,6 +32,8 @@ export interface Settings {
   apiKey: string
   theme: 'light' | 'dark' | 'system'
   haptics: boolean
+  appIcon: string
+  hasSeenWelcome: boolean
   updated: Date
 }
 

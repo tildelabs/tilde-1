@@ -5,6 +5,8 @@ const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   theme: 'light',
   haptics: true,
+  appIcon: 'tilde-logo.png',
+  hasSeenWelcome: false,
   updated: new Date(),
 }
 
@@ -38,4 +40,22 @@ export async function setApiKey(apiKey: string): Promise<void> {
 export async function hasApiKey(): Promise<boolean> {
   const key = await getApiKey()
   return key.length > 0
+}
+
+export async function getAppIcon(): Promise<string> {
+  const settings = await getSettings()
+  return settings.appIcon || 'tilde-logo.png'
+}
+
+export async function setAppIcon(appIcon: string): Promise<void> {
+  await updateSettings({ appIcon })
+}
+
+export async function hasSeenWelcome(): Promise<boolean> {
+  const settings = await getSettings()
+  return settings.hasSeenWelcome || false
+}
+
+export async function setHasSeenWelcome(): Promise<void> {
+  await updateSettings({ hasSeenWelcome: true })
 }

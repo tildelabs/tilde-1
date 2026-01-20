@@ -29,3 +29,5 @@ Thumbs.db
 
 # PWA dev files
 dev-dist
+.vercel
+.env*.local
