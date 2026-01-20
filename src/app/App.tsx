@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { App, View, f7ready } from 'framework7-react'
 import { ConversationList } from '@/features/conversations/ConversationList'
 import { ChatView } from '@/features/chat/ChatView'
-import { SettingsView } from '@/features/settings/SettingsView'
 import { Onboarding } from '@/features/onboarding/Onboarding'
 import { hasApiKey } from '@/storage/settings'
 
@@ -19,10 +18,6 @@ const routes = [
   {
     path: '/history',
     component: ConversationList,
-  },
-  {
-    path: '/settings',
-    component: SettingsView,
   },
 ]
 

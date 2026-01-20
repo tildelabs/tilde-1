@@ -95,3 +95,15 @@ export async function updateLastMessage(
   const newContent = serializeConversation(conversationId, conversation.title, messages)
   await updateConversation(conversationId, { content: newContent })
 }
+
+export async function updateConversationTitle(
+  conversationId: string,
+  title: string
+): Promise<void> {
+  const conversation = await getConversation(conversationId)
+  if (!conversation) return
+
+  const messages = parseConversationMarkdown(conversation.content)
+  const newContent = serializeConversation(conversationId, title, messages)
+  await updateConversation(conversationId, { content: newContent, title })
+}

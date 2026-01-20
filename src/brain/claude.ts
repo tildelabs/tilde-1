@@ -155,3 +155,50 @@ export async function validateApiKey(apiKey: string): Promise<boolean> {
     return false
   }
 }
+
+export async function generateChatTitle(userMessage: string, assistantMessage: string): Promise<string> {
+  const apiKey = await getApiKey()
+
+  if (!apiKey) {
+    // Fallback to first few words of user message
+    return userMessage.slice(0, 40).trim() + (userMessage.length > 40 ? '...' : '')
+  }
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 30,
+        messages: [
+          {
+            role: 'user',
+            content: `Generate a very short (2-5 words) title for a conversation that starts with this exchange. Return ONLY the title, no quotes or punctuation at the end.
+
+User: ${userMessage.slice(0, 200)}
+Assistant: ${assistantMessage.slice(0, 200)}`
+          }
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to generate title')
+    }
+
+    const data = await response.json()
+    const title = data.content?.[0]?.text?.trim() || ''
+    
+    // Clean up and limit length
+    return title.slice(0, 50) || userMessage.slice(0, 40).trim()
+  } catch {
+    // Fallback to first few words of user message
+    return userMessage.slice(0, 40).trim() + (userMessage.length > 40 ? '...' : '')
+  }
+}
